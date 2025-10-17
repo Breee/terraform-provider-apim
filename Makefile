@@ -2,7 +2,70 @@ APIM_USERNAME ?= admin
 APIM_PASSWORD ?= admin
 APIM_API1_USERNAME ?= api1
 APIM_API1_PASSWORD ?= api1
-APIM_SERVER_URL ?= http://localhost:30083/automation
+APIM_SERVER_URL ?= http://localhost:8083/automation
+
+# Local development environment
+.PHONY: dev-up
+dev-up: ## Start local Gravitee APIM and dependencies using docker-compose
+	@echo "Starting Gravitee APIM local development environment..."
+	@cd dev && docker compose up -d
+	@echo ""
+	@echo "Gravitee APIM is starting. It may take a minute for all services to be ready."
+	@echo ""
+	@echo "Services:"
+	@echo "  - Management API: http://localhost:8083"
+	@echo "  - Automation API:  http://localhost:8083/automation"
+	@echo "  - Gateway:         http://localhost:8082"
+	@echo "  - Console UI:      http://localhost:8084"
+	@echo "  - Portal UI:       http://localhost:8085"
+	@echo ""
+	@echo "Default credentials: admin / admin"
+	@echo ""
+	@echo "Note: Elasticsearch included with minimal resources (256MB)."
+	@echo ""
+	@echo "To test the provider, run: make dev-test"
+
+.PHONY: dev-down
+dev-down: ## Stop and remove local Gravitee APIM and dependencies
+	@cd dev && docker compose down
+
+.PHONY: dev-logs
+dev-logs: ## Show logs from local Gravitee APIM environment
+	@cd dev && docker compose logs -f
+
+.PHONY: dev-build
+dev-build: ## Build the provider for local development
+	@echo "Building Terraform provider..."
+	@go build -o terraform-provider-apim
+	@echo "✓ Provider built successfully"
+	@echo ""
+	@echo "To use the local provider, set up terraform dev overrides:"
+	@echo "  make dev-setup-terraform"
+
+.PHONY: dev-setup-terraform
+dev-setup-terraform: ## Setup Terraform to use local provider build
+	@echo "Setting up Terraform dev overrides..."
+	@echo 'provider_installation {' > ~/.terraformrc
+	@echo '  dev_overrides {' >> ~/.terraformrc
+	@echo '    "gravitee-io/apim" = "'$(shell pwd)'"' >> ~/.terraformrc
+	@echo '  }' >> ~/.terraformrc
+	@echo '  direct {}' >> ~/.terraformrc
+	@echo '}' >> ~/.terraformrc
+	@echo "✓ Terraform configured to use local provider from: $(shell pwd)"
+	@echo ""
+	@echo "Now you can test with: cd dev/examples/simple-api && terraform plan"
+
+.PHONY: dev-test
+dev-test: dev-build dev-setup-terraform ## Build provider and run a quick test
+	@echo ""
+	@echo "Testing provider with simple-api example..."
+	@cd dev/examples/simple-api && terraform init -upgrade && terraform plan
+
+.PHONY: dev-reset-terraform
+dev-reset-terraform: ## Remove Terraform dev overrides
+	@rm -f ~/.terraformrc ~/.terraform.d/terraform.rc
+	@echo "✓ Terraform dev overrides removed"
+
 
 .PHONY: speakeasy
 speakeasy: ## Run speakeasy generation with curated examples and docs
@@ -56,6 +119,14 @@ acceptance-tests: ## Run acceptance tests
 .PHONY: examples-tests
 examples-tests: ## Run acceptance tests using examples
 	@APIM_USERNAME=${APIM_USERNAME} APIM_PASSWORD="$${APIM_PASSWORD}" APIM_SERVER_URL=${APIM_SERVER_URL} TF_ACC=1 go test -v ./tests/examples
+
+
+.PHONY: all-tests
+all-tests: unit-tests acceptance-tests ## Run all tests (unit, examples, and acceptance)
+	@echo ""
+	@echo "=========================================="
+	@echo "✓ All tests passed successfully!"
+	@echo "=========================================="
 
 .PHONY: unit-tests
 unit-tests: ## Run unit tests

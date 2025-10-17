@@ -17,7 +17,7 @@ You can manage with Terraform the following:
 * Applications
 * Subscriptions
 
-[Go to our documentation web site for more about configuration, capabilities and examples](https://documentation.gravitee.io/apim/terraform) 
+[Go to our documentation web site for more about configuration, capabilities and examples](https://documentation.gravitee.io/apim/terraform)
 
 Compatible with APIM 4.9 and above
 
@@ -95,3 +95,40 @@ Available configuration:
 <!-- No End Testing the provider locally [usage] -->
 
 <!-- Placeholder for Future Speakeasy SDK Sections -->
+
+## Local Development Environment
+
+Quick setup for developing the Terraform provider locally.
+
+### Quick Start
+
+```sh
+make dev-up                  # Start APIM
+make dev-build              # Build provider
+make dev-setup-terraform    # Configure Terraform
+cd dev/examples/simple-api && terraform apply
+```
+
+**Services:**
+- Console UI: http://localhost:8084 (admin/admin)
+- Gateway: http://localhost:8082
+- Automation API: http://localhost:8083/automation
+
+### Development Cycle
+
+After code changes:
+```sh
+make dev-build
+cd dev/examples/simple-api && terraform plan
+```
+
+### Testing
+
+```sh
+make unit-tests              # Unit tests
+make dev-example-tests       # Example regression tests
+make all-tests              # All tests
+```
+
+**Documentation:** See [dev/README.md](dev/README.md) and [dev/QUICK_REFERENCE.md](dev/QUICK_REFERENCE.md)
+
