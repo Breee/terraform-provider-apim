@@ -7,7 +7,7 @@ terraform {
 }
 
 provider "apim" {
-  server_url = "http://localhost:8083/automation"
+  server_url = "http://localhost:30083/automation"
   username   = "admin"
   password   = "admin"
 }

@@ -1,8 +1,9 @@
-APIM_USERNAME ?= admin
-APIM_PASSWORD ?= admin
-APIM_API1_USERNAME ?= api1
-APIM_API1_PASSWORD ?= api1
-APIM_SERVER_URL ?= http://localhost:30083/automation
+
+export APIM_USERNAME ?= admin
+export APIM_PASSWORD ?= admin
+export APIM_API1_USERNAME ?= api1
+export APIM_API1_PASSWORD ?= api1
+export APIM_SERVER_URL ?= http://localhost:30083/automation
 
 .PHONY: speakeasy
 speakeasy: ## Run speakeasy generation with curated examples and docs
@@ -50,6 +51,7 @@ pre-test:
 
 .PHONY: acceptance-tests
 acceptance-tests: ## Run acceptance tests
+	@echo "Running acceptance tests against APIM at ${APIM_SERVER_URL} with user ${APIM_USERNAME}"
 	@APIM_USERNAME=${APIM_USERNAME} APIM_PASSWORD="$${APIM_PASSWORD}" APIM_SERVER_URL=${APIM_SERVER_URL} TF_ACC=1 go test -v ./tests/acceptance
 
 
