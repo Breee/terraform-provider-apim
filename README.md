@@ -96,39 +96,68 @@ Available configuration:
 
 <!-- Placeholder for Future Speakeasy SDK Sections -->
 
-## Local Development Environment
+# Local Development Environment
 
-Quick setup for developing the Terraform provider locally.
+Quick setup for developing the Gravitee APIM Terraform Provider.
 
-### Quick Start
+You can use terraform or tofu cli.
 
-```sh
-make dev-up                  # Start APIM
-make dev-build              # Build provider
-make dev-setup-terraform    # Configure Terraform
-cd dev/examples/simple-api && terraform apply
+## Quick Start
+
+```bash
+# 1. One-time setup (starts services, builds provider, configures Terraform)
+make dev-setup
+
+# 2. Test it
+cd examples/use-cases/application-simple && terraform apply && terraform destroy
 ```
 
-**Services:**
-- Console UI: http://localhost:8084 (admin/admin)
-- Gateway: http://localhost:8082
-- Automation API: http://localhost:8083/automation
+## Development Cycle
 
-### Development Cycle
+1. Add a new use-case example in `examples/use-cases/` or modify an existing one.
+1. After making code changes:
+  ```bash
+  make dev               # Build + validate + status
+  # OR
+  make build             # Just build (shorter)
 
-After code changes:
-```sh
-make dev-build
-cd dev/examples/simple-api && terraform plan
+  cd examples/use-cases/application-simple
+  terraform plan         # Test (no need to re-init!)
+  terraform apply
+  ```
+
+## Services
+
+Once running (`make dev-up`):
+
+- **Console UI**: http://localhost:8084 (admin/admin)
+- **Gateway**: http://localhost:8082
+- **Automation API**: http://localhost:8083/automation
+
+There is a `compose.yml` file defining the services used for local development.
+
+## Common Commands
+
+```bash
+make dev-setup          # One-time setup (services + provider + config)
+make dev                # Main dev command (build + validate + status)
+make build              # Quick build only
+make dev-status         # Check environment status
+make dev-logs           # View logs
+make dev-up             # Start devenv
+make dev-down           # Stop devenv
 ```
+
+## Examples
+
+Located in `examples" directory.
+All examples serve as both documentation and regression tests.
+
 
 ### Testing
 
 ```sh
 make unit-tests              # Unit tests
-make dev-example-tests       # Example regression tests
 make all-tests              # All tests
 ```
-
-**Documentation:** See [dev/README.md](dev/README.md) and [dev/QUICK_REFERENCE.md](dev/QUICK_REFERENCE.md)
 
