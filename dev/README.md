@@ -2,33 +2,31 @@
 
 Quick setup for developing the Gravitee APIM Terraform Provider.
 
+You can use terraform or tofu cli.
+
 ## Quick Start
 
 ```bash
-# 1. Start services
-make dev-up
+# 1. One-time setup (starts services, builds provider, configures Terraform)
+make dev-setup
 
-# 2. Build provider
-make dev-build
-
-# 3. Configure Terraform to use your local build
-make dev-setup-terraform
-
-# 4. Test it
-cd dev/examples/simple-api
-terraform plan
-terraform apply
+# 2. Test it
+cd examples/use-cases/application-simple && terraform apply && terraform destroy
 ```
 
 ## Development Cycle
 
-After making code changes:
+1. Add a new use-case example in `examples/use-cases/` or modify an existing one.
+1. After making code changes:
+  ```bash
+  make dev               # Build + validate + status
+  # OR
+  make build             # Just build (shorter)
 
-```bash
-make dev-build          # Rebuild
-cd dev/examples/simple-api
-terraform plan          # Test (no need to re-init!)
-```
+  cd examples/use-cases/application-simple
+  terraform plan         # Test (no need to re-init!)
+  terraform apply
+  ```
 
 ## Services
 
@@ -38,61 +36,22 @@ Once running (`make dev-up`):
 - **Gateway**: http://localhost:8082
 - **Automation API**: http://localhost:8083/automation
 
+There is a `compose.yml` file defining the services used for local development.
+
 ## Common Commands
 
 ```bash
-make dev-up             # Start APIM
-make dev-down           # Stop APIM
-make dev-build          # Build provider
+make dev-setup          # One-time setup (services + provider + config)
+make dev                # Main dev command (build + validate + status)
+make build              # Quick build only
+make dev-status         # Check environment status
 make dev-logs           # View logs
-make dev-example-tests  # Run tests
+make dev-up             # Start devenv
+make dev-down           # Stop devenv
 ```
 
 ## Examples
 
-Located in `dev/examples/`:
-- `simple-api/` - Basic API
-- `application/` - Application resource
-- `shared-policy-group/` - Policy group
+Located in `examples" directory.
+ll examples serve as both documentation and regression tests.
 
-All examples serve as both documentation and regression tests.
-
-## Testing
-
-```bash
-# Run example regression tests
-make dev-example-tests
-
-# Run single test
-make dev-example-test-single TEST=TestExampleSimpleAPI
-
-# Run all tests
-make all-tests
-```
-
-## Troubleshooting
-
-**Provider not found?**
-```bash
-make dev-build && make dev-setup-terraform
-```
-
-**Changes not working?**
-```bash
-make dev-build  # Must rebuild after code changes
-```
-
-**Need to reset?**
-```bash
-cd dev && docker compose down -v
-make dev-up
-```
-
-## How It Works
-
-1. `make dev-setup-terraform` creates `~/.terraformrc` with dev overrides
-2. Terraform uses YOUR binary instead of downloading from registry
-3. After `make dev-build`, Terraform automatically picks up changes
-4. No need to `terraform init` again after rebuilding
-
-That's it! 🚀

@@ -23,7 +23,44 @@ dev-up: ## Start local Gravitee APIM and dependencies using docker-compose
 	@echo ""
 	@echo "Note: Elasticsearch included with minimal resources (256MB)."
 	@echo ""
-	@echo "To test the provider, run: make dev-test"
+	@echo "To test the provider and setup terraform to use the local provider, run: make dev-setup"
+
+.PHONY: dev-setup
+dev-setup: ## Complete development environment setup (run this once)
+	@echo "🚀 Setting up development environment..."
+	@echo "========================================"
+	@echo ""
+	@echo "1️⃣  Starting services..."
+	@make --no-print-directory dev-up
+	@echo ""
+	@echo "2️⃣  Building provider..."
+	@go build -o terraform-provider-apim
+	@echo "✅ Provider built"
+	@echo ""
+	@echo "3️⃣  Configuring Terraform..."
+	@echo 'provider_installation {' > ~/.terraformrc
+	@echo '  dev_overrides {' >> ~/.terraformrc
+	@echo '    "gravitee-io/apim" = "'$(shell pwd)'"' >> ~/.terraformrc
+	@echo '  }' >> ~/.terraformrc
+	@echo '  direct {}' >> ~/.terraformrc
+	@echo '}' >> ~/.terraformrc
+	@echo "✅ Terraform configured"
+	@echo ""
+	@echo "4️⃣  Waiting for services to be ready..."
+	@sleep 10
+	@echo ""
+	@echo "🎉 Setup complete!"
+	@echo "=================="
+	@echo ""
+	@echo "💡 Development Workflow:"
+	@echo "  • Main command:     make dev"
+	@echo "  • Build only:       make dev-build"
+	@echo "  • Quick test:       make dev-test-quick"
+	@echo ""
+	@echo "🔗 Useful links:"
+	@echo "  • Console UI:    http://localhost:8084 (admin/admin)"
+	@echo "  • Management:    http://localhost:8083"
+	@echo "  • Automation:    http://localhost:8083/automation"
 
 .PHONY: dev-down
 dev-down: ## Stop and remove local Gravitee APIM and dependencies
@@ -34,13 +71,62 @@ dev-logs: ## Show logs from local Gravitee APIM environment
 	@cd dev && docker compose logs -f
 
 .PHONY: dev-build
-dev-build: ## Build the provider for local development
-	@echo "Building Terraform provider..."
+dev-build: ## Fast build and verify (main development command)
+	@echo "🔨 Building provider..."
 	@go build -o terraform-provider-apim
-	@echo "✓ Provider built successfully"
+	@echo "✅ Build successful"
+	@echo "🧪 Running quick verification..."
+	@cd dev/examples/simple-api && terraform validate > /dev/null 2>&1 && echo "✅ Configuration valid" || echo "❌ Configuration invalid"
+	@echo "🚀 Ready for testing!"
+
+.PHONY: build
+build: dev-build ## Alias for dev-build (shorter command)
+
+.PHONY: dev
+dev: ## Main development command - build, test, and show status (recommended)
+	@echo "🏗️  Development Workflow"
+	@echo "========================"
+	@make --no-print-directory dev-build
 	@echo ""
-	@echo "To use the local provider, set up terraform dev overrides:"
-	@echo "  make dev-setup-terraform"
+	@echo "📋 Quick Status Check:"
+	@docker compose -f dev/docker-compose.yml ps --format "table {{.Service}}\t{{.Status}}\t{{.Ports}}" 2>/dev/null || echo "⚠️  Services not running - run 'make dev-setup' first"
+	@echo ""
+	@echo "🎯 Next Steps:"
+	@echo "  • Test: cd dev/examples/simple-api && terraform plan"
+	@echo "  • Logs: make dev-logs"
+
+.PHONY: dev-status
+dev-status: ## Check status of development environment
+	@echo "🔍 Development Environment Status"
+	@echo "================================="
+	@echo ""
+	@echo "📦 Services:"
+	@docker compose -f dev/docker-compose.yml ps --format "table {{.Service}}\t{{.Status}}\t{{.Ports}}" 2>/dev/null || echo "❌ Services not running"
+	@echo ""
+	@echo "🏗️  Provider:"
+	@if [ -f terraform-provider-apim ]; then \
+		echo "✅ Provider binary exists ($(shell stat -c%y terraform-provider-apim 2>/dev/null | cut -d' ' -f1-2))"; \
+	else \
+		echo "❌ Provider binary missing"; \
+	fi
+	@echo ""
+	@echo "⚙️  Terraform config:"
+	@if [ -f ~/.terraformrc ]; then \
+		echo "✅ Dev overrides configured"; \
+	else \
+		echo "❌ Dev overrides not configured"; \
+	fi
+	@echo ""
+	@echo "🧪 Quick validation:"
+	@cd dev/examples/simple-api && terraform validate > /dev/null 2>&1 && echo "✅ Example configuration valid" || echo "❌ Example configuration invalid"
+
+.PHONY: dev-test-quick
+dev-test-quick: dev-build ## Build and run a quick smoke test
+	@echo "🚀 Running quick smoke test..."
+	@cd dev/examples/simple-api && { \
+		terraform init -upgrade > /dev/null 2>&1; \
+		terraform plan > /dev/null 2>&1 && echo "✅ Smoke test passed" || echo "❌ Smoke test failed"; \
+	}
 
 .PHONY: dev-setup-terraform
 dev-setup-terraform: ## Setup Terraform to use local provider build
@@ -139,4 +225,17 @@ doc-gen: ## Generate Terraform examples docs
 
 .PHONY: help
 help: ## Display this help.
-	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_0-9-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
+	@echo "🛠️  Terraform Provider Development"
+	@echo "=================================="
+	@echo ""
+	@echo "🚀 Quick Start:"
+	@echo "  make dev-setup    # One-time setup"
+	@echo "  make dev          # Main development command"
+	@echo ""
+	@echo "📋 All Commands:"
+	@awk 'BEGIN {FS = ":.*##"; printf ""} /^[a-zA-Z_0-9-]+:.*?##/ { printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
+	@echo ""
+	@echo "💡 Workflow Tips:"
+	@echo "  • First time: make dev-setup"
+	@echo "  • Daily dev:  make dev"
+	@echo "  • Check all:  make dev-status"
